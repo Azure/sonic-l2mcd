@@ -1,0 +1,30 @@
+debian/sonic-ndi-api-dev
+
+# http://www.gnu.org/software/automake
+
+Makefile.in
+Makefile
+
+config.guess.dh-orig
+config.log
+config.status
+config.sub.dh-orig
+debian/sonic-ndi-api-dev.debhelper.log
+debian/sonic-ndi-api-dev.substvars
+libtool
+config.h.in~
+
+# http://www.gnu.org/software/autoconf
+
+/autom4te.cache
+/autoscan.log
+/autoscan-*.log
+/aclocal.m4
+/compile
+/config.h.in
+/configure
+/configure.scan
+/depcomp
+/install-sh
+/missing
+/stamp-h1

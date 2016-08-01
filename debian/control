@@ -1,0 +1,12 @@
+Source: sonic-ndi-api-dev
+Section: net
+Priority: optional
+Maintainer: Dell <support@dell.com>
+Build-Depends: debhelper (>= 9), autotools-dev,libsonic-common-dev,libsonic-object-library-dev
+Standards-Version: 3.9.3
+
+Package: sonic-ndi-api-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},libsonic-common-dev,libsonic-object-library-dev
+Description: This package contains NAS NDI API code
+
