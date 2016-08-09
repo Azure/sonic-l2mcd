@@ -1,9 +1,11 @@
-Source: sonic-ndi-api-dev
+Source: sonic-nas-ndi-api
 Section: net
 Priority: optional
 Maintainer: Dell <support@dell.com>
 Build-Depends: debhelper (>= 9),dh-autoreconf,autotools-dev,libsonic-common-dev,libsonic-object-library-dev
 Standards-Version: 3.9.3
+Vcs-Browser: https://github.com/Azure/sonic-nas-ndi-api
+Vcs-Git: https://github.com/Azure/sonic-nas-ndi-api.git
 
 Package: sonic-ndi-api-dev
 Architecture: any
