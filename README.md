@@ -1,19 +1,13 @@
-SONiC NAS NDI API
-=================
+sonic-nas-ndi-api
+-----------------
+This repo contains the NDI API definitions of the network abstraction service (NAS). It provides header files that define data structures and prototypes used by NAS modules to access NDI functions.
 
-NDI API definitions for the SONiC project
-
-Description
------------
-
-This repo contains the NDI API definitions of the Network abstraction service. It provides header files that define data structures and prototypes used by NAS modules to access NDI functions.
-
-Building
+Build
 ---------
-Please see the instructions in the sonic-nas-manifest repo for more details on the common build tools.  [Sonic-nas-manifest](https://github.com/Azure/sonic-nas-manifest)
+See [sonic-nas-manifest](https://github.com/Azure/sonic-nas-manifest) for more information on common build tools.
 
-Development Dependencies:
- - None
+### Development dependencies
+None
 
 BUILD CMD: sonic_build -- clean binary
 
