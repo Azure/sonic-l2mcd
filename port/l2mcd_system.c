@@ -407,6 +407,29 @@ int l2mcd_system_init(int flag)
     int rc=0;
     char *l2mcd_msg_sock= L2MCD_MSG_SOCK_NAME;
 
+	    memset(&l2mcd_context, 0, sizeof(L2MCD_CONTEXT));
+    g_l2mcd_vlan_dbg_to_sys_log = FALSE;
+    /* Initialize logger */
+    APP_LOG_INIT();
+    g_curr_dbg_level = APP_LOG_LEVEL_NOTICE;
+    g_l2mcd_rx_is_l2_sock = TRUE;
+    /* Debug Log Files */
+   
+    g_l2mcd_init_fp = fopen("/var/log/l2mcd_init.log","w+");
+    APP_LOG_SET_LEVEL(g_curr_dbg_level);
+    L2MCD_INIT_LOG("Starting L2MCD Daemon with Loglevel::%d flag:0x%x logall_to_syslog:%d",g_curr_dbg_level, flag,g_l2mcd_vlan_dbg_to_sys_log);
+
+    if (flag & 0x1) 
+    {
+        g_l2mcd_vlan_dbg_to_sys_log= TRUE;
+        g_l2mcd_dbg_vlan_log_all=TRUE;
+        memset(&g_l2mcd_pkt_log[0],1, L2MCD_VLAN_MAX);
+        g_l2mcd_vlan_log_mask =L2MCD_LOG_MASK_INFO|L2MCD_LOG_MASK_DEBUG;
+        L2MCD_INIT_LOG("Enabing vlan debug all on init");
+    }
+   
+
+    l2mcd_avll_init();
     signal(SIGPIPE, SIG_IGN);
     cfg = event_config_new();
     if (!cfg)

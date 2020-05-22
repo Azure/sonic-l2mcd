@@ -100,8 +100,36 @@
 #define L2MCD_VLAN_IS_BM_SET(bm,x) L2MCD_IS_BIT_SET(bm[L2MCD_VLAN_BM_IDX(x)],L2MCD_VLAN_BM_POS(x)) 
 
 
-typedef void* L2MCD_AVL_TREE;
+#define M_AVLL_OFFSETOF(STRUCT, FIELD)  (unsigned long)((char *)(&((STRUCT *)0)->FIELD) - (char *)0)
+typedef struct avl_table L2MCD_AVL_TABLE;
+typedef L2MCD_AVL_TABLE* L2MCD_AVL_TREE;
 typedef uint32_t L2MCD_AVL_NODE;
+#define M_AVLL_INIT_TREE(TREE, COMPARE, KEY_OFF, NODE_OFF)
+static inline void * M_AVLL_FIRST(L2MCD_AVL_TREE avl_tree)
+{
+    if (!avl_tree) return NULL;
+    avl_t_init((avl_trav_t *)(avl_tree->trav), avl_tree);
+    return avl_t_next((avl_trav_t *)(avl_tree->trav));
+}
+static inline void * M_AVLL_NEXT(L2MCD_AVL_TREE avl_tree, L2MCD_AVL_NODE node)
+{
+   if (!avl_tree) return NULL;
+   return avl_t_next((avl_trav_t *)(avl_tree->trav));
+}
+static inline L2MCD_AVL_TREE L2MCD_AVL_CREATE(avl_comparison_func *func, void *ptr, void *a)
+{
+    L2MCD_AVL_TREE tree;
+    tree= avl_create(func, ptr, (struct libavl_allocator *) a);
+    tree->trav = calloc(1, sizeof(avl_trav_t));
+    return tree;
+}
+#define L2MCD_AVL_ENTRY_COUNT(TREE) TREE->avl_count
+#define M_AVLL_FIND    avl_find
+#define M_AVLL_DELETE  avl_delete
+#define M_AVLL_INSERT  avl_probe
+#define M_AVLL_DESTROY avl_destroy
+#define M_AVLL_INIT_NODE(NODE) 
+#define M_AVLL_SET_REBALANCE(TREE, FLAG)
 
 typedef struct l2mcd_if_tree_s
 {
@@ -205,26 +233,79 @@ extern L2MCD_CONTEXT l2mcd_context;
 #define g_portdb_pending_count            l2mcd_context.portdb_pending_count
 #define g_port_init_done                  l2mcd_context.port_init_done
 
-#define L2MCD_INIT_LOG(...)  
-#define L2MCD_INIT_LOG_INFO(...)        
-#define L2MCD_LOG_DEBUG printf
-#define L2MCD_LOG_INFO printf
-#define L2MCD_LOG_NOTICE printf
-#define L2MCD_LOG_WARN printf
-#define L2MCD_LOG_ERR printf
-#define L2MCD_LOG_CRIT printf
-#define L2MCD_CLI_PRINT printf
-
+#define L2MCD_LOG_DEBUG(...)        applog_write(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define L2MCD_LOG_INFO(...)         applog_write(APP_LOG_LEVEL_INFO, __VA_ARGS__)
+#define L2MCD_LOG_NOTICE(...)       applog_write(APP_LOG_LEVEL_NOTICE, __VA_ARGS__)
+#define L2MCD_LOG_WARN(...)         applog_write(APP_LOG_LEVEL_WARNING, __VA_ARGS__)
+#define L2MCD_LOG_ERR(...)          applog_write(APP_LOG_LEVEL_ERR, __VA_ARGS__)
+#define L2MCD_LOG_CRIT(...)         applog_write(APP_LOG_LEVEL_CRIT, __VA_ARGS__)
+#define L2MCD_CLI_PRINT(...)        do {\
+             if (g_l2mcd_fwk_dbg_mode) {l2mcsync_debug_print(__VA_ARGS__);}\
+             else if (g_l2mcd_cmd_fp) {fprintf(g_l2mcd_cmd_fp, ##__VA_ARGS__);fprintf(g_l2mcd_cmd_fp,"\n"); fflush(g_l2mcd_cmd_fp);}\
+             }while(0)
 #define L2MCD_LOG_MASK_DEBUG 0x4
 #define L2MCD_LOG_MASK_PKT   0x2
 #define L2MCD_LOG_MASK_INFO  0x1
 
-#define L2MCD_VLAN_LOG_ERR(vlan,...)      
-#define L2MCD_VLAN_LOG_INFO(vlan,...)      
-#define L2MCD_PKT_PRINT(vlan, ...)       
-#define L2MCD_VLAN_LOG_DEBUG(vlan,...)       
+#define L2MCD_INIT_LOG(...)        do {\
+            if (g_l2mcd_init_fp) {\
+            fprintf(g_l2mcd_init_fp, ##__VA_ARGS__);fprintf(g_l2mcd_init_fp,"\n");fflush(g_l2mcd_init_fp);}\
+            applog_write(APP_LOG_LEVEL_NOTICE, __VA_ARGS__);\
+            }while(0)
+#define L2MCD_INIT_LOG_INFO(...)        do {\
+            if (g_l2mcd_init_fp) {\
+            fprintf(g_l2mcd_init_fp, ##__VA_ARGS__);fprintf(g_l2mcd_init_fp,"\n");fflush(g_l2mcd_init_fp);}\
+            applog_write(APP_LOG_LEVEL_INFO, __VA_ARGS__);\
+            }while(0)
+#define L2MCD_VLAN_LOG_ERR(vlan,...)        do {\
+            if (g_l2mcd_pkt_fp && g_l2mcd_pkt_log[vlan&0xFFF]) {\
+            fprintf(g_l2mcd_pkt_fp,"[%d] ", vlan);fprintf(g_l2mcd_pkt_fp, ##__VA_ARGS__);fprintf(g_l2mcd_pkt_fp,"\n"); fflush(g_l2mcd_pkt_fp);}\
+            if (g_l2mcd_vlan_dbg_to_sys_log && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_INFO)) {\
+                applog_write(APP_LOG_LEVEL_NOTICE, __VA_ARGS__);}\
+            }while(0)
+#define L2MCD_VLAN_LOG_INFO(vlan,...)        do {\
+            if (g_l2mcd_pkt_fp && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_INFO)) {\
+            fprintf(g_l2mcd_pkt_fp,"[%d] ", vlan);fprintf(g_l2mcd_pkt_fp, ##__VA_ARGS__);fprintf(g_l2mcd_pkt_fp,"\n"); fflush(g_l2mcd_pkt_fp);}\
+            if (g_l2mcd_vlan_dbg_to_sys_log && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_INFO)) {\
+                applog_write(APP_LOG_LEVEL_NOTICE, __VA_ARGS__);}\
+            }while(0)
+#define L2MCD_PKT_PRINT(vlan, ...)        do {\
+            if (g_l2mcd_pkt_fp && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_PKT)) {\
+            fprintf(g_l2mcd_pkt_fp,"[%d] ", vlan);fprintf(g_l2mcd_pkt_fp, ##__VA_ARGS__);fprintf(g_l2mcd_pkt_fp,"\n"); fflush(g_l2mcd_pkt_fp);}\
+            if (g_l2mcd_vlan_dbg_to_sys_log && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_PKT)) {\
+                applog_write(APP_LOG_LEVEL_NOTICE, __VA_ARGS__);}\
+            }while(0)
+#define L2MCD_VLAN_LOG_DEBUG(vlan,...)        do {\
+            if (g_l2mcd_pkt_fp && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_DEBUG)) {\
+            fprintf(g_l2mcd_pkt_fp,"[%d] ", vlan);fprintf(g_l2mcd_pkt_fp, ##__VA_ARGS__);fprintf(g_l2mcd_pkt_fp,"\n"); fflush(g_l2mcd_pkt_fp);}\
+            if (g_l2mcd_vlan_dbg_to_sys_log && g_l2mcd_pkt_log[vlan&0xFFF] && (g_l2mcd_vlan_log_mask&L2MCD_LOG_MASK_DEBUG)) {\
+                applog_write(APP_LOG_LEVEL_NOTICE,__VA_ARGS__);}\
+            }while(0)
 
 int l2mcd_system_init(int flag);
+int l2mcd_mld_vdb_init(void);
+int l2mcd_avll_init(void);
+void dump_mcgrpl3if(int vid);
+uint32_t l2mcd_ifname_to_kifindex(char *if_name);
+void dump_mcgrp_class (uint32_t afi);
+void l2mcd_print_global_var(void);
+int l2mcd_avl_compare_u32(const void *ptr1, const void *ptr2, void *params);
  struct event *l2mcd_igmprx_sock_init(int *fd, char *iname);
 int l2mcd_igmprx_sock_close(char *pnames, int fd, struct event *igmp_rx_event);
+int l2mcd_add_kif_to_if(char *ifname, uint32_t ifid, int sock_fd, struct event *ev, int po_id, int vid, int op, int oper);
+int l2mcd_del_if_tree(uint32_t ifid);
+l2mcd_if_tree_t* l2mcd_if_to_kif(uint32_t ifid);
+l2mcd_if_tree_t* l2mcd_kif_to_if(uint32_t kif);
+l2mcd_if_tree_t* l2mcd_kif_to_rx_if(uint32_t kif);
+void l2mcd_set_loglevel(int level);
+void l2mcd_dump_cfg(int vid);
+void l2mcd_dump_custom(int id);
+void l2mcd_clear_snooping_stats(int vid);
+void l2mcd_clear_snooping(int vid);
+void portdb_insert_addr_ipv4_list(L2MCD_AVL_TREE *portdb_tree, UINT32 port_index,
+                     UINT32 ipaddress, UINT8 prefix_length, VRF_INDEX vrf_index, UINT32 flags);
+int l2mcd_portstate_update(int kif, int state, char *iname);
+int l3_time_freq_init(void);
+int l2mcd_port_list_update(char *pnames, int oper_state, int is_add);
+void igmp_process_pimv2_packet(char *sptr_ip6_hdr,  UINT16 vir_port_id, UINT32 phy_port_id);
 #endif
