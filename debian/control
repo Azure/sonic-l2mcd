@@ -1,0 +1,11 @@
+Source: sonic
+Maintainer: Broadcom
+Section: net
+Priority: optional
+Build-Depends: dh-exec (>=0.3), debhelper (>= 9), autotools-dev
+Standards-Version: 1.0.0
+
+Package: l2mcd
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: This package contains L2MCD for SONiC project.
